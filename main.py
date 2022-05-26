@@ -164,12 +164,17 @@ if __name__ == "__main__":
                                         if code_val in code_dict:
                                             if code_dict[code_val].count(
                                                     item) > 0:
+                                                xlog.warning("已经存在词条：" + item +
+                                                             "\t" + code_val)
                                                 continue
                                             old_val = code_val
                                             code_val += qm0[2]
                                             if code_val in code_dict:
                                                 if code_dict[code_val].count(
                                                         item) > 0:
+                                                    xlog.warning("已经存在词条：" +
+                                                                 item + "\t" +
+                                                                 code_val)
                                                     continue
                                                 old_val = code_val
                                                 code_val += qm1[2]
@@ -177,6 +182,9 @@ if __name__ == "__main__":
                                                     if code_dict[
                                                             code_val].count(
                                                                 item) > 0:
+                                                        xlog.warning(
+                                                            "已经存在词条：" + item +
+                                                            "\t" + code_val)
                                                         continue
                                                     code_dict[code_val].append(
                                                         item)
@@ -188,8 +196,8 @@ if __name__ == "__main__":
                                                     xlog.info(
                                                         "编码词条：" + item + "\t" +
                                                         code_val + " [同位编码：" +
-                                                        code_dict[code_val]
-                                                        [0] + "\t" + code_val +
+                                                        code_dict[code_val][0]
+                                                        + "\t" + code_val +
                                                         "]")
                                                 else:
                                                     code_dict[code_val] = [
@@ -203,8 +211,8 @@ if __name__ == "__main__":
                                                     xlog.info(
                                                         "编码词条：" + item + "\t" +
                                                         code_val + " [前置编码：" +
-                                                        code_dict[old_val][0]
-                                                        + "\t" + old_val + "]")
+                                                        code_dict[old_val][0] +
+                                                        "\t" + old_val + "]")
                                             else:
                                                 code_dict[code_val] = [item]
                                                 count += 1
@@ -231,6 +239,9 @@ if __name__ == "__main__":
                                             if code_val in code_dict:
                                                 if code_dict[code_val].count(
                                                         item) > 0:
+                                                    xlog.warning("已经存在词条：" +
+                                                                 item + "\t" +
+                                                                 code_val)
                                                     continue
                                                 old_val = code_val
                                                 code_val += qm0[2]
@@ -238,6 +249,9 @@ if __name__ == "__main__":
                                                     if code_dict[
                                                             code_val].count(
                                                                 item) > 0:
+                                                        xlog.warning(
+                                                            "已经存在词条：" + item +
+                                                            "\t" + code_val)
                                                         continue
                                                     old_val = code_val
                                                     code_val += qm1[2]
@@ -245,6 +259,10 @@ if __name__ == "__main__":
                                                         if code_dict[
                                                                 code_val].count(
                                                                     item) > 0:
+                                                            xlog.warning(
+                                                                "已经存在词条：" +
+                                                                item + "\t" +
+                                                                code_val)
                                                             continue
                                                         old_val = code_val
                                                         code_val += qm2[2]
@@ -253,6 +271,11 @@ if __name__ == "__main__":
                                                                     code_val].count(
                                                                         item
                                                                     ) > 0:
+                                                                xlog.warning(
+                                                                    "已经存在词条：" +
+                                                                    item +
+                                                                    "\t" +
+                                                                    code_val)
                                                                 continue
                                                             code_dict[
                                                                 code_val].append(
@@ -302,10 +325,9 @@ if __name__ == "__main__":
                                                             "编码词条：" + item +
                                                             "\t" + code_val +
                                                             " [前置编码：" +
-                                                            code_dict[
-                                                                old_val][0] +
-                                                            "\t" + old_val +
-                                                            "]")
+                                                            code_dict[old_val]
+                                                            [0] + "\t" +
+                                                            old_val + "]")
                                                 else:
                                                     code_dict[code_val] = [
                                                         item
@@ -318,8 +340,8 @@ if __name__ == "__main__":
                                                     xlog.info(
                                                         "编码词条：" + item + "\t" +
                                                         code_val + " [前置编码：" +
-                                                        code_dict[old_val][0]
-                                                        + "\t" + old_val + "]")
+                                                        code_dict[old_val][0] +
+                                                        "\t" + old_val + "]")
                                             else:
                                                 code_dict[code_val] = [item]
                                                 count += 1
@@ -339,6 +361,9 @@ if __name__ == "__main__":
                                                     if code_dict[
                                                             code_val].count(
                                                                 item) > 0:
+                                                        xlog.warning(
+                                                            "已经存在词条：" + item +
+                                                            "\t" + code_val)
                                                         continue
                                                     old_val = code_val
                                                     code_val += qm0[2]
@@ -346,6 +371,10 @@ if __name__ == "__main__":
                                                         if code_dict[
                                                                 code_val].count(
                                                                     item) > 0:
+                                                            xlog.warning(
+                                                                "已经存在词条：" +
+                                                                item + "\t" +
+                                                                code_val)
                                                             continue
                                                         old_val = code_val
                                                         code_val += qm1[2]
@@ -354,6 +383,11 @@ if __name__ == "__main__":
                                                                     code_val].count(
                                                                         item
                                                                     ) > 0:
+                                                                xlog.warning(
+                                                                    "已经存在词条：" +
+                                                                    item +
+                                                                    "\t" +
+                                                                    code_val)
                                                                 continue
                                                             code_dict[
                                                                 code_val].append(
@@ -403,10 +437,9 @@ if __name__ == "__main__":
                                                             "编码词条：" + item +
                                                             "\t" + code_val +
                                                             " [前置编码：" +
-                                                            code_dict[
-                                                                old_val][0] +
-                                                            "\t" + old_val +
-                                                            "]")
+                                                            code_dict[old_val]
+                                                            [0] + "\t" +
+                                                            old_val + "]")
                                                 else:
                                                     code_dict[code_val] = [
                                                         item

@@ -94,6 +94,7 @@ if __name__ == "__main__":
     if not os.path.exists(args["dict"]):
         xlog.error("词库控制文件不存在！操作终止。")
     else:
+        # *编码工作
         xlog.info("开始编码...")
         dir_name = os.path.dirname(args["dict"])
         xlog.info("码表所在目录：" + dir_name)
@@ -116,7 +117,7 @@ if __name__ == "__main__":
 
             if d_name == args["char"] or d_name == args["ext"]:
                 single_dict = get_single_dict(single_dict, read_list)
-        xlog.info("共读取到 " + str(len(code_dict)) + " 组词条。")
+        xlog.info("共读取到 " + str(len(code_dict)) + " 组编码。")
         xlog.info("共读取到 " + str(len(single_dict)) + " 个单字。")
 
         count = 0
@@ -456,10 +457,325 @@ if __name__ == "__main__":
                 results.append(item + "\n")
 
         xlog.info("编码完成。共新增 " + str(count) + " 组词条。")
-        xlog.info("开始写入新码表内容...")
-        with io.open(splicing_dict_file(dir_name, args["user"]),
-                     mode="w",
-                     encoding="utf-8") as f:
-            f.writelines(results)
+        if count > 0:
+            xlog.info("开始写入新码表内容...")
+            with io.open(splicing_dict_file(dir_name, args["user"]),
+                         mode="w",
+                         encoding="utf-8") as f:
+                f.writelines(results)
+            xlog.info("写入新码表内容完成，编码工作结束。")
 
-        xlog.info("写入新码表内容完成，编码工作全部结束。")
+        # *校验工作
+        # ?因为存在飞键的设计，所以不检验同一词条重码的情况
+        xlog.info("开始校验...")
+        redundancy_list = []
+        multiple_list = []
+        error_list = []
+        for key in code_dict:
+            key_len = len(key)
+            for item in code_dict[key]:
+                item_len = len(item)
+                if item_len <= 1 or "aiouv;".find(key[0]) != -1:
+                    continue
+
+                # *检验冗余的情况
+                is_redundancy = False
+                if item_len == 2:
+                    # *二字词组
+                    if key_len > 4:
+                        if not key[:-1] in code_dict:
+                            is_redundancy = True
+                elif item_len == 3:
+                    # *三字词组
+                    if key_len > 3:
+                        if not key[:-1] in code_dict:
+                            is_redundancy = True
+                elif item_len >= 4:
+                    # *多字词组
+                    if key_len > 4:
+                        if not key[:-1] in code_dict:
+                            is_redundancy = True
+
+                if is_redundancy:
+                    redundancy_list.append(item + "\t" + key)
+
+                # *检验重码的情况
+                is_multiple = False
+                if item_len == 2:
+                    # *二字词组
+                    if key_len >= 4 and key_len < 6 and len(
+                            code_dict[key]) > 1:
+                        is_multiple = True
+                elif item_len == 3:
+                    # *三字词组
+                    if key_len >= 3 and key_len < 6 and len(
+                            code_dict[key]) > 1:
+                        is_multiple = True
+                elif item_len >= 4:
+                    # *多字词组
+                    if key_len >= 4 and key_len < 6 and len(
+                            code_dict[key]) > 1:
+                        is_multiple = True
+
+                if is_multiple:
+                    multiple_list.append(item + "\t" + key)
+
+                # *检验错码的情况
+                is_error = True
+                if item_len == 2:
+                    # *二字词组
+                    if (not item[0] in single_dict) or (not item[1]
+                                                        in single_dict):
+                        is_error = False
+                        continue
+
+                    if key_len == 2:
+                        for ele in single_dict[item[0]]:
+                            if ele[0] == key[0]:
+                                is_error = False
+                                break
+                        if not is_error:
+                            is_error = True
+                            if "bcdefghjklmnpqrstwxyz".find(key[1]) != -1:
+                                # *二级简码
+                                for ele in single_dict[item[1]]:
+                                    if ele[0] == key[1]:
+                                        is_error = False
+                                        break
+                            else:
+                                for ele in single_dict[item[1]]:
+                                    if ele[2] == key[1]:
+                                        is_error = False
+                                        break
+                    elif key_len == 3:
+                        # !在我的码表中这种情况只会是 525
+                        for ele in single_dict[item[0]]:
+                            if ele[0] == key[0]:
+                                is_error = False
+                                break
+                        if not is_error:
+                            is_error = True
+                            for ele in single_dict[item[1]]:
+                                if ele[2:4] == key[1:3]:
+                                    is_error = False
+                                    break
+                    elif key_len == 4:
+                        for ele in single_dict[item[0]]:
+                            if ele[0:2] == key[0:2]:
+                                is_error = False
+                                break
+                        if not is_error:
+                            is_error = True
+                            for ele in single_dict[item[1]]:
+                                if ele[0:2] == key[2:4]:
+                                    is_error = False
+                                    break
+                    elif key_len == 5:
+                        for ele in single_dict[item[0]]:
+                            if ele[0:2] == key[0:2] and ele[2] == key[4]:
+                                is_error = False
+                                break
+                        if not is_error:
+                            is_error = True
+                            for ele in single_dict[item[1]]:
+                                if ele[0:2] == key[2:4]:
+                                    is_error = False
+                                    break
+                    elif key_len == 6:
+                        for ele in single_dict[item[0]]:
+                            if ele[0:2] == key[0:2] and ele[2] == key[4]:
+                                is_error = False
+                                break
+                        if not is_error:
+                            is_error = True
+                            for ele in single_dict[item[1]]:
+                                if ele[0:2] == key[2:4] and ele[2] == key[5]:
+                                    is_error = False
+                                    break
+                elif item_len == 3:
+                    # *三字词组
+                    if (not item[0] in single_dict) or (
+                            not item[1] in single_dict) or (not item[2]
+                                                            in single_dict):
+                        is_error = False
+                        continue
+
+                    if key_len == 3:
+                        for ele in single_dict[item[0]]:
+                            if ele[0] == key[0]:
+                                is_error = False
+                                break
+                        if not is_error:
+                            is_error = True
+                            for ele in single_dict[item[1]]:
+                                if ele[0] == key[1]:
+                                    is_error = False
+                                    break
+                        if not is_error:
+                            is_error = True
+                            for ele in single_dict[item[2]]:
+                                if ele[0] == key[2]:
+                                    is_error = False
+                                    break
+                    elif key_len == 4:
+                        for ele in single_dict[item[0]]:
+                            for ele in single_dict[item[0]]:
+                                if ele[0] == key[0] and ele[2] == key[3]:
+                                    is_error = False
+                                    break
+                        if not is_error:
+                            is_error = True
+                            for ele in single_dict[item[1]]:
+                                if ele[0] == key[1]:
+                                    is_error = False
+                                    break
+                        if not is_error:
+                            is_error = True
+                            for ele in single_dict[item[2]]:
+                                if ele[0] == key[2]:
+                                    is_error = False
+                                    break
+                    elif key_len == 5:
+                        for ele in single_dict[item[0]]:
+                            for ele in single_dict[item[0]]:
+                                if ele[0] == key[0] and ele[2] == key[3]:
+                                    is_error = False
+                                    break
+                        if not is_error:
+                            is_error = True
+                            for ele in single_dict[item[1]]:
+                                if ele[0] == key[1] and ele[2] == key[4]:
+                                    is_error = False
+                                    break
+                        if not is_error:
+                            is_error = True
+                            for ele in single_dict[item[2]]:
+                                if ele[0] == key[2]:
+                                    is_error = False
+                                    break
+                    elif key_len == 6:
+                        for ele in single_dict[item[0]]:
+                            for ele in single_dict[item[0]]:
+                                if ele[0] == key[0] and ele[2] == key[3]:
+                                    is_error = False
+                                    break
+                        if not is_error:
+                            is_error = True
+                            for ele in single_dict[item[1]]:
+                                if ele[0] == key[1] and ele[2] == key[4]:
+                                    is_error = False
+                                    break
+                        if not is_error:
+                            is_error = True
+                            for ele in single_dict[item[2]]:
+                                if ele[0] == key[2] and ele[2] == key[5]:
+                                    is_error = False
+                                    break
+                elif key_len >= 4:
+                    # *多字词组
+                    if (not item[0] in single_dict) or (
+                            not item[1] in single_dict) or (
+                                not item[2] in single_dict) or (
+                                    not item[-1] in single_dict):
+                        is_error = False
+                        continue
+
+                    if key_len == 4:
+                        for ele in single_dict[item[0]]:
+                            if ele[0] == key[0]:
+                                is_error = False
+                                break
+                        if not is_error:
+                            is_error = True
+                            for ele in single_dict[item[1]]:
+                                if ele[0] == key[1]:
+                                    is_error = False
+                                    break
+                        if not is_error:
+                            is_error = True
+                            for ele in single_dict[item[2]]:
+                                if ele[0] == key[2]:
+                                    is_error = False
+                                    break
+                        if not is_error:
+                            is_error = True
+                            for ele in single_dict[item[-1]]:
+                                if ele[0] == key[3]:
+                                    is_error = False
+                                    break
+                    elif key_len == 5:
+                        for ele in single_dict[item[0]]:
+                            if ele[0] == key[0] and ele[2] == key[4]:
+                                is_error = False
+                                break
+                        if not is_error:
+                            is_error = True
+                            for ele in single_dict[item[1]]:
+                                if ele[0] == key[1]:
+                                    is_error = False
+                                    break
+                        if not is_error:
+                            is_error = True
+                            for ele in single_dict[item[2]]:
+                                if ele[0] == key[2]:
+                                    is_error = False
+                                    break
+                        if not is_error:
+                            is_error = True
+                            for ele in single_dict[item[-1]]:
+                                if ele[0] == key[3]:
+                                    is_error = False
+                                    break
+                    elif key_len == 6:
+                        for ele in single_dict[item[0]]:
+                            if ele[0] == key[0] and ele[2] == key[4]:
+                                is_error = False
+                                break
+                        if not is_error:
+                            is_error = True
+                            for ele in single_dict[item[1]]:
+                                if ele[0] == key[1] and ele[2] == key[5]:
+                                    is_error = False
+                                    break
+                        if not is_error:
+                            is_error = True
+                            for ele in single_dict[item[2]]:
+                                if ele[0] == key[2]:
+                                    is_error = False
+                                    break
+                        if not is_error:
+                            is_error = True
+                            for ele in single_dict[item[-1]]:
+                                if ele[0] == key[3]:
+                                    is_error = False
+                                    break
+
+                if is_error:
+                    error_list.append(item + "\t" + key)
+
+        redundancy_count = len(redundancy_list)
+        multiple_count = len(multiple_list)
+        error_count = len(error_list)
+
+        if redundancy_count > 0:
+            xlog.info("================================================")
+            xlog.warning("共检测到 " + str(redundancy_count) + " 组冗余码：")
+            for r_item in redundancy_list:
+                xlog.warning(r_item)
+            xlog.info("================================================")
+        if multiple_count > 0:
+            xlog.info("================================================")
+            xlog.warning("共检测到 " + str(multiple_count) + " 组重码：")
+            for m_item in multiple_list:
+                xlog.warning(m_item)
+            xlog.info("================================================")
+        if error_count > 0:
+            xlog.info("================================================")
+            xlog.warning("共检测到 " + str(error_count) + " 组错码：")
+            for e_item in error_list:
+                xlog.warning(e_item)
+            xlog.info("================================================")
+
+        xlog.info("检验已完成。")
+        xlog.info("************************************************")
+        xlog.info("所有操作都已完成。")

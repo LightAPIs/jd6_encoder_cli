@@ -62,6 +62,14 @@ def get_single_dict(source_dict, word_list):
     return single_dict
 
 
+def get_gdq_list(encode_dict):
+    gdq_list = []
+    for code in encode_dict:
+        for word in encode_dict[code]:
+            gdq_list.append(word + "\t" + code + "\n")
+    return gdq_list
+
+
 if __name__ == "__main__":
     ap = argparse.ArgumentParser(description="键道6编码器")
     ap.add_argument("-d", "--dict", required=True, help="输入词库控制文件路径")
@@ -80,6 +88,7 @@ if __name__ == "__main__":
                     required=False,
                     default="xkjd6.user",
                     help="可选，输入用户码表名称，默认为 xkjd6.user")
+    ap.add_argument("-g", "--gdq", required=False, help="可选，生成跟打器所用码表文件的路径")
 
     args = vars(ap.parse_args())
     xlog = Logger("DEBUG", "log")
@@ -89,6 +98,8 @@ if __name__ == "__main__":
     xlog.info("单字码表名称：" + args["char"])
     xlog.info("扩展的单字码表名称：" + args["ext"])
     xlog.info("用户码表名称：" + args["user"])
+    if args["gdq"]:
+        xlog.info("生成跟打器所用码表文件：" + args["gdq"])
     xlog.info("************************************************")
 
     if not os.path.exists(args["dict"]):
@@ -776,6 +787,14 @@ if __name__ == "__main__":
                 xlog.warning(e_item)
             xlog.info("================================================")
 
-        xlog.info("检验已完成。")
+        xlog.info("校验已完成。")
+
+        if args["gdq"]:
+            xlog.info("开始生成跟打器所用的码表文件...")
+            gdq_list = get_gdq_list(code_dict)
+            with io.open(args["gdq"], mode="w", encoding="utf-8-sig") as f:
+                f.writelines(gdq_list)
+            xlog.info("生成跟打器所用的码表文件完成。")
+
         xlog.info("************************************************")
         xlog.info("所有操作都已完成。")

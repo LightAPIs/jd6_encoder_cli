@@ -88,7 +88,8 @@ if __name__ == "__main__":
                     required=False,
                     default="xkjd6.user",
                     help="可选，输入用户码表名称，默认为 xkjd6.user")
-    ap.add_argument("-g", "--gdq", required=False, help="可选，生成跟打器所用码表文件的路径")
+    ap.add_argument("-g", "--gdq", required=False, help="可选，生成跟打器所用的码表文件路径")
+    ap.add_argument("-i", "--ignore", required=False, help="可选，忽略错码检测的列表文件路径")
 
     args = vars(ap.parse_args())
     xlog = Logger("DEBUG", "log")
@@ -99,7 +100,9 @@ if __name__ == "__main__":
     xlog.info("扩展的单字码表名称：" + args["ext"])
     xlog.info("用户码表名称：" + args["user"])
     if args["gdq"]:
-        xlog.info("生成跟打器所用码表文件：" + args["gdq"])
+        xlog.info("生成跟打器所用的码表文件：" + args["gdq"])
+    if args["ignore"]:
+        xlog.info("忽略错码检测的列表文件：" + args["ignore"])
     xlog.info("************************************************")
 
     if not os.path.exists(args["dict"]):
@@ -762,10 +765,21 @@ if __name__ == "__main__":
                                     break
 
                 if is_error:
-                    error_list.append(item + "\t" + key)
+                    error_list.append({"word": item, "code": key})
 
         redundancy_count = len(redundancy_list)
         multiple_count = len(multiple_list)
+
+        if args["ignore"] and os.path.exists(args["ignore"]):
+            ignore_list = read_file_2_list(args["ignore"])
+            if len(ignore_list) > 0:
+                new_error_list = []
+                for error_item in error_list:
+                    if ignore_list.count(error_item["word"]) > 0:
+                        continue
+                    new_error_list.append(error_item)
+                error_list = new_error_list
+
         error_count = len(error_list)
 
         if redundancy_count > 0:
@@ -784,7 +798,7 @@ if __name__ == "__main__":
             xlog.info("================================================")
             xlog.warning("共检测到 " + str(error_count) + " 组错码：")
             for e_item in error_list:
-                xlog.warning(e_item)
+                xlog.warning(e_item["word"] + "\t" + e_item["code"])
             xlog.info("================================================")
 
         xlog.info("校验已完成。")

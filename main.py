@@ -136,6 +136,7 @@ if __name__ == "__main__":
 
         count = 0
         results = []
+        need_write = False
         for item in user_list:
             item = item.strip()
             if is_word_item(item):
@@ -150,6 +151,7 @@ if __name__ == "__main__":
                         code_dict[bm] = [ct]
                     results.append(item + "\n")
                 else:
+                    need_write = True
                     item_len = len(item)
                     if item_len <= 1:
                         xlog.warning("无法编码单字词条：" + item)
@@ -471,7 +473,7 @@ if __name__ == "__main__":
                 results.append(item + "\n")
 
         xlog.info("编码完成。共新增 " + str(count) + " 组词条。")
-        if count > 0:
+        if need_write:
             xlog.info("开始写入新码表内容...")
             with io.open(splicing_dict_file(dir_name, args["user"]),
                          mode="w",

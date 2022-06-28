@@ -62,6 +62,26 @@ def get_single_dict(source_dict, word_list):
     return single_dict
 
 
+def get_first_level_dict(source_dict, word_list):
+    level_dict = source_dict
+    for word in word_list:
+        item = word.strip()
+        if is_word_item(item):
+            item_arr = item.split("\t")
+            if len(item_arr) < 2:
+                continue
+            ct = item_arr[0]
+            bm = item_arr[1]
+            if len(bm) == 1 and "abcdefghijklmnopqrstuvwxyz".count(bm) == 1:
+                dup = 0
+                for ch in level_dict:
+                    if level_dict[ch] == bm:
+                        dup += 1
+                if dup < 2:
+                    level_dict[ct] = bm
+    return level_dict
+
+
 def get_gdq_list(encode_dict):
     gdq_list = []
     for code in encode_dict:
@@ -90,6 +110,11 @@ if __name__ == "__main__":
                     help="可选，输入用户码表名称，默认为 xkjd6.user")
     ap.add_argument("-g", "--gdq", required=False, help="可选，生成跟打器所用的码表文件路径")
     ap.add_argument("-i", "--ignore", required=False, help="可选，忽略错码检测的列表文件路径")
+    ap.add_argument("-v",
+                    "--verify",
+                    required=False,
+                    action="store_true",
+                    help="可选，校验简码所对应的声韵词组")
 
     args = vars(ap.parse_args())
     xlog = Logger("DEBUG", "log")
@@ -103,6 +128,8 @@ if __name__ == "__main__":
         xlog.info("生成跟打器所用的码表文件：" + args["gdq"])
     if args["ignore"]:
         xlog.info("忽略错码检测的列表文件：" + args["ignore"])
+    if args["verify"]:
+        xlog.info("校验简码所对应的声韵词组。")
     xlog.info("************************************************")
 
     if not os.path.exists(args["dict"]):
@@ -120,6 +147,7 @@ if __name__ == "__main__":
 
         code_dict = {}
         single_dict = {}
+        first_level_dict = {}
         user_list = []
         for d_name in source_data:
             file_name = splicing_dict_file(dir_name, d_name)
@@ -131,8 +159,15 @@ if __name__ == "__main__":
 
             if d_name == args["char"] or d_name == args["ext"]:
                 single_dict = get_single_dict(single_dict, read_list)
+
+            # ?收集一级简码词条
+            if args["verify"]:
+                first_level_dict = get_first_level_dict(
+                    first_level_dict, read_list)
         xlog.info("共读取到 " + str(len(code_dict)) + " 组编码。")
         xlog.info("共读取到 " + str(len(single_dict)) + " 个单字。")
+        if args["verify"]:
+            xlog.info("共读取到 " + str(len(first_level_dict)) + " 个一级简码。")
 
         count = 0
         results = []
@@ -487,12 +522,20 @@ if __name__ == "__main__":
         redundancy_list = []
         multiple_list = []
         error_list = []
+
+        second_level_dict = {}
+        simplified_list = []
+
         for key in code_dict:
             key_len = len(key)
             for item in code_dict[key]:
                 item_len = len(item)
                 if item_len <= 1 or "aiouv;".find(key[0]) != -1:
                     continue
+
+                # ?收集二级简码词条
+                if args["verify"] and item_len == 2 and key_len <= 3:
+                    second_level_dict[item] = key
 
                 # *检验冗余的情况
                 is_redundancy = False
@@ -802,6 +845,30 @@ if __name__ == "__main__":
             for e_item in error_list:
                 xlog.warning(e_item["word"] + "\t" + e_item["code"])
             xlog.info("================================================")
+
+        if args["verify"]:
+            xlog.info("开始校验简码所对应的声韵词组...")
+            for key in code_dict:
+                for item in code_dict[key]:
+                    if len(item) == 2 and len(key) > 3:
+                        if item in second_level_dict:
+                            simplified_list.append(
+                                f"{item}\t{key}\t({item}\t{second_level_dict[item]})"
+                            )
+                            continue
+                        if (item[0]
+                                in first_level_dict) and (item[1]
+                                                          in first_level_dict):
+                            simplified_list.append(
+                                f"{item}\t{key}\t({item[0]}|{item[1]}\t{first_level_dict[item[0]]}_{first_level_dict[item[1]]}_)"
+                            )
+            simplified_count = len(simplified_list)
+            if simplified_count > 0:
+                xlog.info("================================================")
+                xlog.warning("共检测到 " + str(simplified_count) + " 组存在简码的声韵词组：")
+                for s_item in simplified_list:
+                    xlog.warning(s_item)
+                xlog.info("================================================")
 
         xlog.info("校验已完成。")
 

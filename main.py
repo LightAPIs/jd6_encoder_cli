@@ -199,7 +199,8 @@ if __name__ == "__main__":
                     encoded = py.encode_word(item)
                     for enc in encoded:
                         if enc["status"] == -1:
-                            xlog.warning(f"码表中不存在该字：{enc['val']}，故无法编码词条：{item}")
+                            xlog.warning(
+                                f"码表中不存在该字：{enc['val']}，故无法编码词条：{item}")
                         elif enc["status"] == 0:
                             xlog.warning(f"已经存在词条：{item}\t{enc['val']}")
                         elif enc["status"] == 1:
@@ -209,7 +210,9 @@ if __name__ == "__main__":
                         elif enc["status"] == 2:
                             count += 1
                             results.append(item + "\t" + enc['val'] + "\n")
-                            xlog.info(f"编码词条：{item}\t{enc['val']} [前置编码：{enc['ext']}]")
+                            xlog.info(
+                                f"编码词条：{item}\t{enc['val']} [前置编码：{enc['ext']}]"
+                            )
                         elif enc["status"] == 3:
                             count += 1
                             results.append(item + "\t" + enc['val'] + "\n")
@@ -319,7 +322,7 @@ if __name__ == "__main__":
                                         is_error = False
                                         break
                     elif key_len == 3:
-                        # !在我的码表中这种情况只会是 525
+                        # !先判定 525 的情况
                         for ele in single_dict[item[0]]:
                             if ele[0] == key[0]:
                                 is_error = False
@@ -330,6 +333,20 @@ if __name__ == "__main__":
                                 if ele[2:4] == key[1:3]:
                                     is_error = False
                                     break
+
+                        # !再判定三级简码的情况
+                        if is_error:
+                            for ele in single_dict[item[0]]:
+                                if ele[0:2] == key[0:2]:
+                                    is_error = False
+                                    break
+                            if not is_error:
+                                is_error = True
+                                for ele in single_dict[item[1]]:
+                                    if ele[0] == key[2]:
+                                        is_error = False
+                                        break
+
                     elif key_len == 4:
                         for ele in single_dict[item[0]]:
                             if ele[0:2] == key[0:2]:

@@ -140,13 +140,18 @@ class PinYin:
         else:
             self.code_dict[bm] = [ct]
 
-    def convert(self, pinyin_str):
+    def convert(self, pinyin_str, word_str):
         qm = []
         p_list = pinyin_str.split(" ")
+        w_len = len(word_str)
         p_len = len(p_list)
+        if w_len != p_len:
+            return []
         for i in range(p_len):
             if i < 3 or i == p_len - 1:
-                qm.append(PinYin._get_code_from_pinyin(p_list[i]))
+                qm.append(
+                    PinYin._get_code_from_pinyin(
+                        p_list[i], self.single_dict[word_str[i]][0][2:4]))
         return qm
 
     def encode_word(self, word):
@@ -165,7 +170,7 @@ class PinYin:
             res = self.remote.get_pinyin(word)
             if len(res) > 0:
                 self.xlog.info(f"从远程 API 读取到\"{word}\"的拼音：" + res)
-                new_qm = self.convert(res)
+                new_qm = self.convert(res, word)
                 if len(new_qm) == qm_len:
                     qm = new_qm
 
@@ -423,15 +428,18 @@ class PinYin:
         return False
 
     @staticmethod
-    def _get_code_from_pinyin(pinyin_str):
+    def _get_code_from_pinyin(pinyin_str, suffix):
+        res = []
         if pinyin_str in PinYin.yin_dict:
-            return PinYin.yin_dict[pinyin_str]
+            for yin in PinYin.yin_dict[pinyin_str]:
+                res.append(yin + suffix)
         else:
-            res = []
             if pinyin_str[:2] in PinYin.sheng_dict:
                 for yun in PinYin.yun_dict[pinyin_str[2:]]:
-                    res.append(PinYin.sheng_dict[pinyin_str[:2]] + yun)
+                    res.append(PinYin.sheng_dict[pinyin_str[:2]] + yun +
+                               suffix)
             else:
                 for yun in PinYin.yun_dict[pinyin_str[1:]]:
-                    res.append(PinYin.sheng_dict[pinyin_str[:1]] + yun)
-            return res
+                    res.append(PinYin.sheng_dict[pinyin_str[:1]] + yun +
+                               suffix)
+        return res

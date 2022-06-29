@@ -4,6 +4,7 @@ import io
 import yaml
 import argparse
 from log import Logger
+from pinyin import PinYin
 
 
 def read_file_2_list(path):
@@ -114,7 +115,12 @@ if __name__ == "__main__":
                     "--verify",
                     required=False,
                     action="store_true",
-                    help="可选，校验简码所对应的声韵词组")
+                    help="可选，启用校验简码所对应的声韵词组")
+    ap.add_argument("-r",
+                    "--remote",
+                    required=False,
+                    action="store_true",
+                    help="可选，启用远程 API 获取多音字的拼音，需填写 config.ini")
 
     args = vars(ap.parse_args())
     xlog = Logger("DEBUG", "log")
@@ -129,7 +135,9 @@ if __name__ == "__main__":
     if args["ignore"]:
         xlog.info("忽略错码检测的列表文件：" + args["ignore"])
     if args["verify"]:
-        xlog.info("校验简码所对应的声韵词组。")
+        xlog.info("启用校验简码所对应的声韵词组。")
+    if args["remote"]:
+        xlog.info("启用远程 API 获取多音字的拼音。")
     xlog.info("************************************************")
 
     if not os.path.exists(args["dict"]):
@@ -169,6 +177,8 @@ if __name__ == "__main__":
         if args["verify"]:
             xlog.info("共读取到 " + str(len(first_level_dict)) + " 个一级简码。")
 
+        py = PinYin(xlog, single_dict, code_dict, args["remote"])
+
         count = 0
         results = []
         need_write = False
@@ -177,336 +187,38 @@ if __name__ == "__main__":
             if is_word_item(item):
                 if item.find("\t") != -1:
                     # 已编码的词条
-                    item_arr = item.split("\t")
-                    ct = item_arr[0]
-                    bm = item_arr[1]
-                    if bm in code_dict:
-                        code_dict[bm].append(ct)
-                    else:
-                        code_dict[bm] = [ct]
+                    item_list = item.split("\t")
+                    py.add_code_to_dict(item_list)
                     results.append(item + "\n")
                 else:
                     need_write = True
-                    item_len = len(item)
-                    if item_len <= 1:
+                    if len(item) <= 1:
                         xlog.warning("无法编码单字词条：" + item)
                         continue
-                    else:
-                        had_error = False
-                        qm = []
-                        for i in range(item_len):
-                            if i < 3 or i == item_len - 1:
-                                if item[i] in single_dict:
-                                    qm.append(single_dict[item[i]])
-                                else:
-                                    xlog.warning("码表中不存在该字：" + item[i] +
-                                                 "，故无法编码词条：" + item)
-                                    had_error = True
-                                    break
 
-                        if not had_error:
-                            qm_len = len(qm)
-                            code_val = ""
-                            is_new = False
-                            if qm_len == 2:
-                                # *二字词
-                                for qm0 in qm[0]:
-                                    for qm1 in qm[1]:
-                                        code_val = qm0[:2] + qm1[:2]
-                                        if code_val in code_dict:
-                                            if code_dict[code_val].count(
-                                                    item) > 0:
-                                                xlog.warning("已经存在词条：" + item +
-                                                             "\t" + code_val)
-                                                continue
-                                            old_val = code_val
-                                            code_val += qm0[2]
-                                            if code_val in code_dict:
-                                                if code_dict[code_val].count(
-                                                        item) > 0:
-                                                    xlog.warning("已经存在词条：" +
-                                                                 item + "\t" +
-                                                                 code_val)
-                                                    continue
-                                                old_val = code_val
-                                                code_val += qm1[2]
-                                                if code_val in code_dict:
-                                                    if code_dict[
-                                                            code_val].count(
-                                                                item) > 0:
-                                                        xlog.warning(
-                                                            "已经存在词条：" + item +
-                                                            "\t" + code_val)
-                                                        continue
-                                                    code_dict[code_val].append(
-                                                        item)
-                                                    count += 1
-                                                    results.append(item +
-                                                                   "\t" +
-                                                                   code_val +
-                                                                   "\n")
-                                                    xlog.info(
-                                                        "编码词条：" + item + "\t" +
-                                                        code_val + " [同位编码：" +
-                                                        code_dict[code_val][0]
-                                                        + "\t" + code_val +
-                                                        "]")
-                                                else:
-                                                    code_dict[code_val] = [
-                                                        item
-                                                    ]
-                                                    count += 1
-                                                    results.append(item +
-                                                                   "\t" +
-                                                                   code_val +
-                                                                   "\n")
-                                                    xlog.info(
-                                                        "编码词条：" + item + "\t" +
-                                                        code_val + " [前置编码：" +
-                                                        code_dict[old_val][0] +
-                                                        "\t" + old_val + "]")
-                                            else:
-                                                code_dict[code_val] = [item]
-                                                count += 1
-                                                results.append(item + "\t" +
-                                                               code_val + "\n")
-                                                xlog.info(
-                                                    "编码词条：" + item + "\t" +
-                                                    code_val + " [前置编码：" +
-                                                    code_dict[old_val][0] +
-                                                    "\t" + old_val + "]")
-                                        else:
-                                            code_dict[code_val] = [item]
-                                            count += 1
-                                            results.append(item + "\t" +
-                                                           code_val + "\n")
-                                            xlog.info("编码词条：" + item + "\t" +
-                                                      code_val)
-                            elif qm_len == 3:
-                                # *三字词
-                                for qm0 in qm[0]:
-                                    for qm1 in qm[1]:
-                                        for qm2 in qm[2]:
-                                            code_val = qm0[0] + qm1[0] + qm2[0]
-                                            if code_val in code_dict:
-                                                if code_dict[code_val].count(
-                                                        item) > 0:
-                                                    xlog.warning("已经存在词条：" +
-                                                                 item + "\t" +
-                                                                 code_val)
-                                                    continue
-                                                old_val = code_val
-                                                code_val += qm0[2]
-                                                if code_val in code_dict:
-                                                    if code_dict[
-                                                            code_val].count(
-                                                                item) > 0:
-                                                        xlog.warning(
-                                                            "已经存在词条：" + item +
-                                                            "\t" + code_val)
-                                                        continue
-                                                    old_val = code_val
-                                                    code_val += qm1[2]
-                                                    if code_val in code_dict:
-                                                        if code_dict[
-                                                                code_val].count(
-                                                                    item) > 0:
-                                                            xlog.warning(
-                                                                "已经存在词条：" +
-                                                                item + "\t" +
-                                                                code_val)
-                                                            continue
-                                                        old_val = code_val
-                                                        code_val += qm2[2]
-                                                        if code_val in code_dict:
-                                                            if code_dict[
-                                                                    code_val].count(
-                                                                        item
-                                                                    ) > 0:
-                                                                xlog.warning(
-                                                                    "已经存在词条：" +
-                                                                    item +
-                                                                    "\t" +
-                                                                    code_val)
-                                                                continue
-                                                            code_dict[
-                                                                code_val].append(
-                                                                    item)
-                                                            count += 1
-                                                            results.append(
-                                                                item + "\t" +
-                                                                code_val +
-                                                                "\n")
-                                                            xlog.info(
-                                                                "编码词条：" +
-                                                                item + "\t" +
-                                                                code_val +
-                                                                " [同位编码：" +
-                                                                code_dict[
-                                                                    code_val]
-                                                                [0] + "\t" +
-                                                                code_val + "]")
-                                                        else:
-                                                            code_dict[
-                                                                code_val] = [
-                                                                    item
-                                                                ]
-                                                            count += 1
-                                                            results.append(
-                                                                item + "\t" +
-                                                                code_val +
-                                                                "\n")
-                                                            xlog.info(
-                                                                "编码词条：" +
-                                                                item + "\t" +
-                                                                code_val +
-                                                                " [前置编码：" +
-                                                                code_dict[
-                                                                    old_val][0]
-                                                                + "\t" +
-                                                                old_val + "]")
-                                                    else:
-                                                        code_dict[code_val] = [
-                                                            item
-                                                        ]
-                                                        count += 1
-                                                        results.append(
-                                                            item + "\t" +
-                                                            code_val + "\n")
-                                                        xlog.info(
-                                                            "编码词条：" + item +
-                                                            "\t" + code_val +
-                                                            " [前置编码：" +
-                                                            code_dict[old_val]
-                                                            [0] + "\t" +
-                                                            old_val + "]")
-                                                else:
-                                                    code_dict[code_val] = [
-                                                        item
-                                                    ]
-                                                    count += 1
-                                                    results.append(item +
-                                                                   "\t" +
-                                                                   code_val +
-                                                                   "\n")
-                                                    xlog.info(
-                                                        "编码词条：" + item + "\t" +
-                                                        code_val + " [前置编码：" +
-                                                        code_dict[old_val][0] +
-                                                        "\t" + old_val + "]")
-                                            else:
-                                                code_dict[code_val] = [item]
-                                                count += 1
-                                                results.append(item + "\t" +
-                                                               code_val + "\n")
-                                                xlog.info("编码词条：" + item +
-                                                          "\t" + code_val)
-                            elif qm_len > 3:
-                                # *多字词
-                                for qm0 in qm[0]:
-                                    for qm1 in qm[1]:
-                                        for qm2 in qm[2]:
-                                            for qm3 in qm[3]:
-                                                code_val = qm0[0] + qm1[
-                                                    0] + qm2[0] + qm3[0]
-                                                if code_val in code_dict:
-                                                    if code_dict[
-                                                            code_val].count(
-                                                                item) > 0:
-                                                        xlog.warning(
-                                                            "已经存在词条：" + item +
-                                                            "\t" + code_val)
-                                                        continue
-                                                    old_val = code_val
-                                                    code_val += qm0[2]
-                                                    if code_val in code_dict:
-                                                        if code_dict[
-                                                                code_val].count(
-                                                                    item) > 0:
-                                                            xlog.warning(
-                                                                "已经存在词条：" +
-                                                                item + "\t" +
-                                                                code_val)
-                                                            continue
-                                                        old_val = code_val
-                                                        code_val += qm1[2]
-                                                        if code_val in code_dict:
-                                                            if code_dict[
-                                                                    code_val].count(
-                                                                        item
-                                                                    ) > 0:
-                                                                xlog.warning(
-                                                                    "已经存在词条：" +
-                                                                    item +
-                                                                    "\t" +
-                                                                    code_val)
-                                                                continue
-                                                            code_dict[
-                                                                code_val].append(
-                                                                    item)
-                                                            count += 1
-                                                            results.append(
-                                                                item + "\t" +
-                                                                code_val +
-                                                                "\n")
-                                                            xlog.info(
-                                                                "编码词条：" +
-                                                                item + "\t" +
-                                                                code_val +
-                                                                " [同位编码：" +
-                                                                code_dict[
-                                                                    code_val]
-                                                                [0] + "\t" +
-                                                                code_val + "]")
-                                                        else:
-                                                            code_dict[
-                                                                code_val] = [
-                                                                    item
-                                                                ]
-                                                            count += 1
-                                                            results.append(
-                                                                item + "\t" +
-                                                                code_val +
-                                                                "\n")
-                                                            xlog.info(
-                                                                "编码词条：" +
-                                                                item + "\t" +
-                                                                code_val +
-                                                                " [前置编码：" +
-                                                                code_dict[
-                                                                    old_val][0]
-                                                                + "\t" +
-                                                                old_val + "]")
-                                                    else:
-                                                        code_dict[code_val] = [
-                                                            item
-                                                        ]
-                                                        count += 1
-                                                        results.append(
-                                                            item + "\t" +
-                                                            code_val + "\n")
-                                                        xlog.info(
-                                                            "编码词条：" + item +
-                                                            "\t" + code_val +
-                                                            " [前置编码：" +
-                                                            code_dict[old_val]
-                                                            [0] + "\t" +
-                                                            old_val + "]")
-                                                else:
-                                                    code_dict[code_val] = [
-                                                        item
-                                                    ]
-                                                    count += 1
-                                                    results.append(item +
-                                                                   "\t" +
-                                                                   code_val +
-                                                                   "\n")
-                                                    xlog.info("编码词条：" + item +
-                                                              "\t" + code_val)
+                    encoded = py.encode_word(item)
+                    for enc in encoded:
+                        if enc["status"] == -1:
+                            xlog.warning(f"码表中不存在该字：{enc['val']}，故无法编码词条：{item}")
+                        elif enc["status"] == 0:
+                            xlog.warning(f"已经存在词条：{item}\t{enc['val']}")
+                        elif enc["status"] == 1:
+                            count += 1
+                            results.append(item + "\t" + enc['val'] + "\n")
+                            xlog.info(f"编码词条：{item}\t{enc['val']}")
+                        elif enc["status"] == 2:
+                            count += 1
+                            results.append(item + "\t" + enc['val'] + "\n")
+                            xlog.info(f"编码词条：{item}\t{enc['val']} [前置编码：{enc['ext']}]")
+                        elif enc["status"] == 3:
+                            count += 1
+                            results.append(item + "\t" + enc['val'] + "\n")
+                            xlog.info(f"编码词条：{item} [同位编码：{enc['ext']}]")
             else:
                 # 非词条
                 results.append(item + "\n")
 
+        code_dict = py.get_code_dict()
         xlog.info("编码完成。共新增 " + str(count) + " 组词条。")
         if need_write:
             xlog.info("开始写入新码表内容...")

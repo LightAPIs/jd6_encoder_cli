@@ -1,0 +1,8 @@
+[engine]
+; API 的接口类型
+type=tianapi
+
+; 天行数据 API 接口，详见：https://www.tianapi.com/apiview/70
+[tianapi]
+; 您自己的 APIKEY，查看于：https://www.tianapi.com/console/userpage/uskey/page/1
+key=

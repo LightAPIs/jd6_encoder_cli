@@ -430,8 +430,8 @@ class PinYin:
             res = []
             if pinyin_str[:2] in PinYin.sheng_dict:
                 for yun in PinYin.yun_dict[pinyin_str[2:]]:
-                    res.append(pinyin_str[:2] + yun)
+                    res.append(PinYin.sheng_dict[pinyin_str[:2]] + yun)
             else:
                 for yun in PinYin.yun_dict[pinyin_str[1:]]:
-                    res.append(pinyin_str[:1] + yun)
+                    res.append(PinYin.sheng_dict[pinyin_str[:1]] + yun)
             return res

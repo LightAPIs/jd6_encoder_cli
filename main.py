@@ -52,8 +52,8 @@ def get_single_dict(source_dict, word_list):
             ct = item_arr[0]
             bm = item_arr[1]
             if len(bm) >= 4:
-                # !1. 字的全码为四码或者六码
-                # !2. 用于编码词条，故最多只需要四码
+                # !1. 单字的全码至少为四码
+                # !2. 仅用于编码和校验词条，故只需要取前四码
                 cut_bm = bm[:4]
                 if ct in single_dict:
                     if single_dict[ct].count(cut_bm) == 0:

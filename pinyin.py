@@ -154,6 +154,47 @@ class PinYin:
                         p_list[i], self.single_dict[word_str[i]][0][2:4]))
         return qm
 
+    def get_clean_qm(self, qm):
+        c_qm = []
+        qm_len = len(qm)
+        if qm_len == 2:
+            for i in range(2):
+                bm = []
+                for single in qm[i]:
+                    sl = single[0:3]
+                    if bm.count(sl) == 0:
+                        bm.append(sl)
+                c_qm.append(bm)
+        elif qm_len == 3:
+            for i in range(3):
+                bm = []
+                for single in qm[i]:
+                    sl = single[0] + '_' + single[2]
+                    if bm.count(sl) == 0:
+                        bm.append(sl)
+                c_qm.append(bm)
+        elif qm_len > 3:
+            for i in range(2):
+                bm = []
+                for single in qm[i]:
+                    sl = single[0] + '_' + single[2]
+                    if bm.count(sl) == 0:
+                        bm.append(sl)
+                c_qm.append(bm)
+            bm2 = []
+            for single in qm[2]:
+                sl = single[0]
+                if bm2.count(sl) == 0:
+                    bm2.append(sl)
+            c_qm.append(bm2)
+            bm3 = []
+            for single in qm[qm_len - 1]:
+                sl = single[0]
+                if bm3.count(sl) == 0:
+                    bm3.append(sl)
+            c_qm.append(bm3)
+        return c_qm
+
     def encode_word(self, word):
         word_len = len(word)
         qm = []
@@ -166,13 +207,14 @@ class PinYin:
                     return [{"status": -1, "val": word[i], "ext": ""}]
 
         qm_len = len(qm)
+        qm = self.get_clean_qm(qm)
         if self.remote and PinYin._is_polyphonic(qm):
             res = self.remote.get_pinyin(word)
             if len(res) > 0:
-                self.xlog.info(f"从远程 API 读取到\"{word}\"的拼音：" + res)
+                self.xlog.info(f"从远程 API 读取到\"{word}\"的拼音：{res}")
                 new_qm = self.convert(res, word)
                 if len(new_qm) == qm_len:
-                    qm = new_qm
+                    qm = self.get_clean_qm(new_qm)
 
         encoded = []
         code_val = ""

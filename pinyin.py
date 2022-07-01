@@ -119,6 +119,29 @@ class PinYin:
         "v": ["l"]
     }
 
+    fly_dict = {
+        "wx": "chuang",
+        "wm": "chuang",
+        "jz": "chao",
+        "wz": "chao",
+        "je": "che",
+        "we": "che",
+        "fx": "zhuang",
+        "fm": "zhuang",
+        "qz": "zhao",
+        "fz": "zhao",
+        "qe": "zhe",
+        "fe": "zhe",
+        "ex": "shuang",
+        "em": "shuang",
+        "gx": "guang",
+        "gm": "guang",
+        "hx": "huang",
+        "hm": "huang",
+        "kx": "kuang",
+        "km": "kuang"
+    }
+
     def __init__(self, xlog, single_dict, code_dict, remote=False):
         self.xlog = xlog
         self.single_dict = single_dict
@@ -465,8 +488,26 @@ class PinYin:
     @staticmethod
     def _is_polyphonic(qm):
         for item in qm:
-            if len(item) > 1:
-                return True
+            item_len = len(item)
+            if item_len > 1:
+                fly_len = {
+                    "chuang": 0,
+                    "chao": 0,
+                    "che": 0,
+                    "zhuang": 0,
+                    "zhao": 0,
+                    "zhe": 0,
+                    "shuang": 0,
+                    "guang": 0,
+                    "huang": 0,
+                    "kuang": 0,
+                }
+                for bm in item:
+                    if len(bm) >= 2 and bm[:2] in PinYin.fly_dict:
+                        fly_len[PinYin.fly_dict[bm[:2]]] += 1
+                res_dict = {k: v for k, v in fly_len.items() if v == item_len}
+                if len(res_dict) == 0:
+                    return True
         return False
 
     @staticmethod

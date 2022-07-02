@@ -24,33 +24,22 @@ def is_word_item(word):
         word[0]) == 0 and word.find(" ") == -1
 
 
-def get_code_dict(source_dict, word_list):
-    code_dict = source_dict
+def parse_code_dict(code_dict, single_dict, level_dict, is_verify, word_list):
     for word in word_list:
         item = word.strip()
         if is_word_item(item):
-            item_arr = item.split("\t")
-            if len(item_arr) < 2:
+            item_list = item.split("\t")
+            if len(item_list) < 2:
                 continue
-            ct = item_arr[0]
-            bm = item_arr[1]
+            ct = item_list[0]
+            bm = item_list[1]
             if bm in code_dict:
                 code_dict[bm].append(ct)
             else:
                 code_dict[bm] = [ct]
-    return code_dict
 
-
-def get_single_dict(source_dict, word_list):
-    single_dict = source_dict
-    for word in word_list:
-        item = word.strip()
-        if is_word_item(item):
-            item_arr = item.split("\t")
-            if len(item_arr) < 2:
+            if len(ct) != 1:
                 continue
-            ct = item_arr[0]
-            bm = item_arr[1]
             if len(bm) >= 4:
                 # !1. 单字的全码至少为四码
                 # !2. 仅用于编码和校验词条，故只需要取前四码
@@ -60,19 +49,10 @@ def get_single_dict(source_dict, word_list):
                         single_dict[ct].append(cut_bm)
                 else:
                     single_dict[ct] = [cut_bm]
-    return single_dict
 
-
-def get_first_level_dict(source_dict, word_list):
-    level_dict = source_dict
-    for word in word_list:
-        item = word.strip()
-        if is_word_item(item):
-            item_arr = item.split("\t")
-            if len(item_arr) < 2:
+            # ?收集一级简码词条
+            if not is_verify:
                 continue
-            ct = item_arr[0]
-            bm = item_arr[1]
             if len(bm) == 1 and "abcdefghijklmnopqrstuvwxyz".count(bm) == 1:
                 dup = 0
                 for ch in level_dict:
@@ -80,7 +60,6 @@ def get_first_level_dict(source_dict, word_list):
                         dup += 1
                 if dup < 2:
                     level_dict[ct] = bm
-    return level_dict
 
 
 def get_gdq_list(encode_dict):
@@ -92,23 +71,13 @@ def get_gdq_list(encode_dict):
 
 
 if __name__ == "__main__":
-    ap = argparse.ArgumentParser(description="键道6编码器")
-    ap.add_argument("-d", "--dict", required=True, help="输入词库控制文件路径")
-    ap.add_argument("-c",
-                    "--char",
-                    required=False,
-                    default="xkjd6.danzi",
-                    help="可选，输入单字码表名称，默认为 xkjd6.danzi")
-    ap.add_argument("-e",
-                    "--ext",
-                    required=False,
-                    default="xkjd6.chaojizici",
-                    help="可选，输入扩展的单字码表名称，默认为 xkjd6.chaojizici")
+    ap = argparse.ArgumentParser(description="Rime星空键道6编码器")
+    ap.add_argument("-d", "--dict", required=True, help="输入词库控制文件路径，如 /path/to/xkjd6.extended.dict.yaml")
     ap.add_argument("-u",
                     "--user",
                     required=False,
                     default="xkjd6.user",
-                    help="可选，输入用户码表名称，默认为 xkjd6.user")
+                    help="可选，输入用户词库名称，默认为 xkjd6.user")
     ap.add_argument("-g", "--gdq", required=False, help="可选，生成跟打器所用的码表文件路径")
     ap.add_argument("-i", "--ignore", required=False, help="可选，忽略错码检测的列表文件路径")
     ap.add_argument("-v",
@@ -127,9 +96,7 @@ if __name__ == "__main__":
 
     xlog.info("************************************************")
     xlog.info("词库控制文件：" + args["dict"])
-    xlog.info("单字码表名称：" + args["char"])
-    xlog.info("扩展的单字码表名称：" + args["ext"])
-    xlog.info("用户码表名称：" + args["user"])
+    xlog.info("用户词库名称：" + args["user"])
     if args["gdq"]:
         xlog.info("生成跟打器所用的码表文件：" + args["gdq"])
     if args["ignore"]:
@@ -144,9 +111,9 @@ if __name__ == "__main__":
         xlog.error("词库控制文件不存在！操作终止。")
     else:
         # *编码工作
-        xlog.info("开始编码...")
+        xlog.info("开始解析词库...")
         dir_name = os.path.dirname(args["dict"])
-        xlog.info("码表所在目录：" + dir_name)
+        xlog.info("词库所在目录：" + dir_name)
 
         source_data = []
         with io.open(args["dict"], mode="r", encoding="utf-8") as f:
@@ -161,22 +128,18 @@ if __name__ == "__main__":
             file_name = splicing_dict_file(dir_name, d_name)
             read_list = read_file_2_list(file_name)
             if d_name != args["user"]:
-                code_dict = get_code_dict(code_dict, read_list)
+                parse_code_dict(code_dict, single_dict, first_level_dict, args["verify"], read_list)
+                xlog.info("读取并解析词库：" + file_name)
             else:
                 user_list = read_list
+                xlog.info("读取用户词库：" + file_name)
 
-            if d_name == args["char"] or d_name == args["ext"]:
-                single_dict = get_single_dict(single_dict, read_list)
-
-            # ?收集一级简码词条
-            if args["verify"]:
-                first_level_dict = get_first_level_dict(
-                    first_level_dict, read_list)
         xlog.info("共读取到 " + str(len(code_dict)) + " 组编码。")
         xlog.info("共读取到 " + str(len(single_dict)) + " 个单字。")
         if args["verify"]:
             xlog.info("共读取到 " + str(len(first_level_dict)) + " 个一级简码。")
 
+        xlog.info("开始编码词组...")
         py = PinYin(xlog, single_dict, code_dict, args["remote"])
 
         count = 0
@@ -233,7 +196,7 @@ if __name__ == "__main__":
 
         # *校验工作
         # ?因为存在飞键的设计，所以不检验同一词条重码的情况
-        xlog.info("开始校验...")
+        xlog.info("开始校验码表...")
         redundancy_list = []
         multiple_list = []
         error_list = []

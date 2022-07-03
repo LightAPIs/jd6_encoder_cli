@@ -226,7 +226,6 @@ class PinYin:
                 if word[i] in self.single_dict:
                     qm.append(self.single_dict[word[i]])
                 else:
-                    self.xlog.warning(f"码表中不存在该字：{word[i]}，故无法编码词条：{word}")
                     return [{"status": -1, "val": word[i], "ext": ""}]
 
         qm_len = len(qm)

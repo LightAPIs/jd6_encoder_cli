@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from config import Config
 from remote.tianapi import TianApi
+from remote.hanlp import HanLP
 
 
 class PinYin:
@@ -154,6 +155,8 @@ class PinYin:
             conf = Config()
             if conf.get_type() == "tianapi":
                 self.remote = TianApi(conf.get_key())
+            elif conf.get_type() == "hanlp":
+                self.remote = HanLP(conf.get_key())
 
     def get_code_dict(self):
         return self.code_dict

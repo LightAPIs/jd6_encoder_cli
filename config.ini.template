@@ -1,8 +1,14 @@
 [engine]
-; API 的接口类型
+; 设定所使用的 API 接口
+; 可选参数：tianapi|hanlp
 type=tianapi
 
 ; 天行数据 API 接口，详见：https://www.tianapi.com/apiview/70
 [tianapi]
 ; 您自己的 APIKEY，查看于：https://www.tianapi.com/console/userpage/uskey/page/1
+key=
+
+; HanLP.com API 接口，详见：https://www.hanlp.com/HanLPfile/admin.html
+[hanlp]
+; 您自己的 token，查看于：https://www.hanlp.com/product-toPinyin.html
 key=

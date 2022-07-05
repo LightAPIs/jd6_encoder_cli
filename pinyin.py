@@ -139,7 +139,9 @@ class PinYin:
         "hx": "huang",
         "hm": "huang",
         "kx": "kuang",
-        "km": "kuang"
+        "km": "kuang",
+        "fh": "zhai",
+        "qh": "zhai"
     }
 
     def __init__(self, xlog, single_dict, code_dict, remote=False):
@@ -500,6 +502,7 @@ class PinYin:
                     "guang": 0,
                     "huang": 0,
                     "kuang": 0,
+                    "zhai": 0
                 }
                 for bm in item:
                     if len(bm) >= 2 and bm[:2] in PinYin.fly_dict:

@@ -19,3 +19,9 @@ optional arguments:
   -v, --verify          可选，启用校验简码所对应的声韵词组
   -r, --remote          可选，启用远程 API 获取多音字的拼音，需填写 config.ini
 ```
+
+## 外部依赖
+
+- `yaml` 文件解析：[yaml/pyyaml](https://github.com/yaml/pyyaml) ([MIT license](https://github.com/yaml/pyyaml/blob/master/LICENSE))
+- HTTP 网络请求：[psf/requests](https://github.com/psf/requests) ([Apache-2.0 license](https://github.com/psf/requests/blob/main/LICENSE))
+- 本地拼音转换：[mozillazg/python-pinyin](https://github.com/mozillazg/python-pinyin) ([MIT license](https://github.com/mozillazg/python-pinyin/blob/master/LICENSE.txt))

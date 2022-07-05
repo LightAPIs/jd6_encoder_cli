@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from config import Config
+from localapi import LocalApi
 from remote.tianapi import TianApi
 from remote.hanlp import HanLP
 
@@ -150,13 +151,16 @@ class PinYin:
         self.single_dict = single_dict
         self.code_dict = code_dict
         self.fly_dict = self.find_fly_dict()
-        self.remote = None
+        self.remote = remote
+        self.py_api = LocalApi()
         if remote:
             conf = Config()
             if conf.get_type() == "tianapi":
-                self.remote = TianApi(conf.get_key())
+                self.py_api = TianApi(conf.get_key())
             elif conf.get_type() == "hanlp":
-                self.remote = HanLP(conf.get_key())
+                self.py_api = HanLP(conf.get_key())
+            else:
+                self.remote = False
 
     def get_code_dict(self):
         return self.code_dict
@@ -189,7 +193,9 @@ class PinYin:
             if len(self.single_dict[ch]) > 1:
                 res_dict = PinYin._filter_fly_dict(self.single_dict[ch], 2)
                 if len(res_dict) > 0:
-                    fly_dict[ch] = [x for j in list(res_dict.values()) for x in j]
+                    fly_dict[ch] = [
+                        x for j in list(res_dict.values()) for x in j
+                    ]
         return fly_dict
 
     def get_fly_dict(self):
@@ -264,10 +270,11 @@ class PinYin:
 
         qm_len = len(qm)
         qm = self.get_clean_qm(qm)
-        if self.remote and self.is_polyphonic(qm, word):
-            res = self.remote.get_pinyin(word)
+        if self.is_polyphonic(qm, word):
+            res = self.py_api.get_pinyin(word)
             if len(res) > 0:
-                self.xlog.info(f"从远程 API 读取到\"{word}\"的拼音：{res}")
+                log_str = "从远程" if self.remote else "由本地"
+                self.xlog.info(f"{log_str} API 读取到\"{word}\"的拼音：{res}")
                 new_qm = self.convert(res, word)
                 if len(new_qm) == qm_len:
                     qm = self.get_clean_qm(new_qm)

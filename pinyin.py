@@ -119,7 +119,7 @@ class PinYin:
         "v": ["l"]
     }
 
-    fly_dict = {
+    fly_key_dict = {
         "wx": "chuang",
         "wm": "chuang",
         "jz": "chao",
@@ -148,6 +148,7 @@ class PinYin:
         self.xlog = xlog
         self.single_dict = single_dict
         self.code_dict = code_dict
+        self.fly_dict = self.find_fly_dict()
         self.remote = None
         if remote:
             conf = Config()
@@ -178,6 +179,18 @@ class PinYin:
                     PinYin._get_code_from_pinyin(
                         p_list[i], self.single_dict[word_str[i]][0][2:4]))
         return qm
+
+    def find_fly_dict(self):
+        fly_dict = {}
+        for ch in self.single_dict:
+            if len(self.single_dict[ch]) > 1:
+                res_dict = PinYin._filter_fly_dict(self.single_dict[ch], 2)
+                if len(res_dict) > 0:
+                    fly_dict[ch] = [x for j in list(res_dict.values()) for x in j]
+        return fly_dict
+
+    def get_fly_dict(self):
+        return self.fly_dict
 
     def get_clean_qm(self, qm):
         c_qm = []
@@ -220,6 +233,22 @@ class PinYin:
             c_qm.append(bm3)
         return c_qm
 
+    def is_polyphonic(self, qm, word):
+        word_len = len(word)
+        for i in range(word_len):
+            item_len = len(qm[i])
+            if item_len > 1:
+                if word_len == 2:
+                    res_dict = PinYin._filter_fly_dict(qm[i], len(qm[i]))
+                    return len(res_dict) == 0
+                elif word_len > 2:
+                    if word[i] in self.fly_dict:
+                        return len(self.fly_dict[word[i]]) < len(
+                            self.single_dict[word[i]])
+                    else:
+                        return True
+        return False
+
     def encode_word(self, word):
         word_len = len(word)
         qm = []
@@ -232,7 +261,7 @@ class PinYin:
 
         qm_len = len(qm)
         qm = self.get_clean_qm(qm)
-        if self.remote and PinYin._is_polyphonic(qm):
+        if self.remote and self.is_polyphonic(qm, word):
             res = self.remote.get_pinyin(word)
             if len(res) > 0:
                 self.xlog.info(f"从远程 API 读取到\"{word}\"的拼音：{res}")
@@ -487,30 +516,28 @@ class PinYin:
         return encoded
 
     @staticmethod
-    def _is_polyphonic(qm):
-        for item in qm:
-            item_len = len(item)
-            if item_len > 1:
-                fly_len = {
-                    "chuang": 0,
-                    "chao": 0,
-                    "che": 0,
-                    "zhuang": 0,
-                    "zhao": 0,
-                    "zhe": 0,
-                    "shuang": 0,
-                    "guang": 0,
-                    "huang": 0,
-                    "kuang": 0,
-                    "zhai": 0
-                }
-                for bm in item:
-                    if len(bm) >= 2 and bm[:2] in PinYin.fly_dict:
-                        fly_len[PinYin.fly_dict[bm[:2]]] += 1
-                res_dict = {k: v for k, v in fly_len.items() if v == item_len}
-                if len(res_dict) == 0:
-                    return True
-        return False
+    def _filter_fly_dict(bm_list, limit_len):
+        fly_code_dict = {
+            "chuang": [],
+            "chao": [],
+            "che": [],
+            "zhuang": [],
+            "zhao": [],
+            "zhe": [],
+            "shuang": [],
+            "guang": [],
+            "huang": [],
+            "kuang": [],
+            "zhai": []
+        }
+        for bm in bm_list:
+            if len(bm) >= 2 and bm[:2] in PinYin.fly_key_dict:
+                fly_code_dict[PinYin.fly_key_dict[bm[:2]]].append(bm)
+        res_dict = {
+            k: v
+            for k, v in fly_code_dict.items() if len(v) >= limit_len
+        }
+        return res_dict
 
     @staticmethod
     def _get_code_from_pinyin(pinyin_str, suffix):

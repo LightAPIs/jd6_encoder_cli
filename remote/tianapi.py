@@ -28,5 +28,7 @@ class TianApi:
                 return response["newslist"][0]["pinyin"]
             else:
                 return ""
+        except KeyError:
+            return ""
         except ValueError:
             return ""

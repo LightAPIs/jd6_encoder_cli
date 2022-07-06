@@ -32,5 +32,7 @@ class HanLP:
                 return res.strip()
             else:
                 return ""
+        except KeyError:
+            return ""
         except ValueError:
             return ""

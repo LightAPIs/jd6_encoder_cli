@@ -81,6 +81,12 @@ def get_gdq_list(encode_dict):
     return gdq_list
 
 
+def is_part(lhs, rhs):
+    if lhs.find(rhs) >= 0 or rhs.find(lhs) >= 0:
+        return True
+    return False
+
+
 if __name__ == "__main__":
     ap = argparse.ArgumentParser(description="Rime星空键道6编码器")
     ap.add_argument("-d",
@@ -94,16 +100,16 @@ if __name__ == "__main__":
                     help="可选，输入用户词库名称，默认为 xkjd6.user")
     ap.add_argument("-g", "--gdq", required=False, help="可选，生成跟打器所用的码表文件路径")
     ap.add_argument("-i", "--ignore", required=False, help="可选，忽略错码检测的列表文件路径")
-    ap.add_argument("-v",
-                    "--verify",
-                    required=False,
-                    action="store_true",
-                    help="可选，启用校验简码所对应的声韵词组")
     ap.add_argument("-f",
                     "--fly",
                     required=False,
                     action="store_true",
                     help="可选，启用校验飞键词组的编码是否缺失")
+    ap.add_argument("-v",
+                    "--verify",
+                    required=False,
+                    action="store_true",
+                    help="可选，启用校验简码所对应的声韵词组")
     ap.add_argument("-r",
                     "--remote",
                     required=False,
@@ -216,7 +222,6 @@ if __name__ == "__main__":
         xlog.info("写入新码表内容完成，编码工作结束。")
 
     # *校验工作
-    # ?因为存在飞键的设计，所以不检验同一词条重码的情况
     xlog.info("开始校验码表...")
     redundancy_list = []
     multiple_list = []
@@ -555,6 +560,71 @@ if __name__ == "__main__":
             xlog.warning(e_item["word"] + "\t" + e_item["code"])
         xlog.info("================================================")
 
+    word_dict = get_word_dict(code_dict)
+
+    # ?校验同一词条的编码冗余情况
+    surplus_list = []
+    # ?校验飞键词组的编码是否缺失
+    fly_list = []
+    fly_dict = py.get_fly_dict()
+
+    for word in word_dict:
+        word_len = len(word)
+        group_len = len(word_dict[word])
+        if word_len < 2:
+            continue
+        if group_len > 1:
+            is_surplus = False
+            for i in range(0, group_len):
+                for j in range(i + 1, group_len):
+                    if is_part(word_dict[word][i], word_dict[word][j]):
+                        is_surplus = True
+                        break
+                if is_surplus:
+                    break
+            if is_surplus:
+                surplus_list.append(f"{word}: [{' '.join(word_dict[word])}]")
+
+        if args["fly"]:
+            is_fly_err = False
+            for i in range(word_len):
+                if i < 3 or i == word_len - 1:
+                    index = i if i < 3 else 3
+                    if word[i] in fly_dict:
+                        fly_count = 0
+                        use_code_list = []
+                        for code in word_dict[word]:
+                            use_code = code[index]
+                            if word_len == 2:
+                                use_code = code[(index * 2):(index * 2 + 2)]
+                            if use_code_list.count(use_code) > 0:
+                                continue
+                            use_code_list.append(use_code)
+                            for fly_code in fly_dict[word[i]]:
+                                if fly_code[:(len(use_code))] == use_code:
+                                    fly_count += 1
+                        if fly_count == 1:
+                            is_fly_err = True
+                            break
+            if is_fly_err:
+                log_str = " ".join(word_dict[word])
+                fly_list.append(f"{word}: [{log_str}]")
+
+    surplus_count = len(surplus_list)
+    fly_err_count = len(fly_list)
+    if surplus_count > 0:
+        xlog.info("================================================")
+        xlog.warning("共检测到 " + str(surplus_count) + " 组词条的编码冗余：")
+        for s_item in surplus_list:
+            xlog.warning(s_item)
+        xlog.info("================================================")
+    if fly_err_count > 0:
+        xlog.info("================================================")
+        xlog.warning("共检测到 " + str(fly_err_count) + " 组可能存在飞键编码缺失的词条：")
+        for f_item in fly_list:
+            xlog.warning(f_item)
+        xlog.info("================================================")
+
     if args["verify"]:
         xlog.info("开始校验简码所对应的声韵词组...")
         simplified_list = []
@@ -577,42 +647,6 @@ if __name__ == "__main__":
             xlog.warning("共检测到 " + str(simplified_count) + " 组存在简码的声韵词组：")
             for s_item in simplified_list:
                 xlog.warning(s_item)
-            xlog.info("================================================")
-
-    if args["fly"]:
-        xlog.info("开始校验飞键词组的编码是否缺失...")
-        fly_list = []
-        fly_dict = py.get_fly_dict()
-        word_dict = get_word_dict(code_dict)
-        for word in word_dict:
-            word_len = len(word)
-            if word_len < 2:
-                continue
-            is_fly_err = False
-            for i in range(word_len):
-                if i < 3 or i == word_len - 1:
-                    index = i if i < 3 else 3
-                    if word[i] in fly_dict:
-                        fly_count = 0
-                        for code in word_dict[word]:
-                            use_code = code[index]
-                            if word_len == 2:
-                                use_code = code[(index * 2):(index * 2 + 2)]
-                            for fly_code in fly_dict[word[i]]:
-                                if fly_code[:(len(use_code))] == use_code:
-                                    fly_count += 1
-                        if fly_count == 1:
-                            is_fly_err = True
-                            break
-            if is_fly_err:
-                log_str = " ".join(word_dict[word])
-                fly_list.append(f"{word}: [{log_str}]")
-        fly_err_count = len(fly_list)
-        if fly_err_count > 0:
-            xlog.info("================================================")
-            xlog.warning("共检测到 " + str(fly_err_count) + " 组可能存在飞键编码缺失的词条：")
-            for f_item in fly_list:
-                xlog.warning(f_item)
             xlog.info("================================================")
 
     xlog.info("校验已完成。")

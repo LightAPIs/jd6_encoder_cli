@@ -7,7 +7,7 @@
 ## 命令
 
 ```bash
-usage: main.py [-h] -d DICT [-u USER] [-g GDQ] [-i IGNORE] [-v] [-r]
+usage: main.py [-h] -d DICT [-u USER] [-g GDQ] [-i IGNORE] [-v] [-f] [-r]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -17,6 +17,7 @@ optional arguments:
   -i IGNORE, --ignore IGNORE
                         可选，忽略错码检测的列表文件路径
   -v, --verify          可选，启用校验简码所对应的声韵词组
+  -f, --fly             可选，启用校验飞键词组的编码是否缺失
   -r, --remote          可选，启用远程 API 获取多音字的拼音，需填写 config.ini
 ```
 

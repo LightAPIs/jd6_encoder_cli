@@ -62,6 +62,17 @@ def parse_code_dict(code_dict, single_dict, level_dict, is_verify, word_list):
                     level_dict[ct] = bm
 
 
+def get_word_dict(code_dict):
+    word_dict = {}
+    for key in code_dict:
+        for item in code_dict[key]:
+            if item in word_dict:
+                word_dict[item].append(key)
+            else:
+                word_dict[item] = [key]
+    return word_dict
+
+
 def get_gdq_list(encode_dict):
     gdq_list = []
     for code in encode_dict:
@@ -88,6 +99,11 @@ if __name__ == "__main__":
                     required=False,
                     action="store_true",
                     help="可选，启用校验简码所对应的声韵词组")
+    ap.add_argument("-f",
+                    "--fly",
+                    required=False,
+                    action="store_true",
+                    help="可选，启用校验飞键词组的编码是否缺失")
     ap.add_argument("-r",
                     "--remote",
                     required=False,
@@ -106,6 +122,8 @@ if __name__ == "__main__":
         xlog.info("忽略错码检测的列表文件：" + args["ignore"])
     if args["verify"]:
         xlog.info("启用校验简码所对应的声韵词组。")
+    if args["fly"]:
+        xlog.info("启用校验飞键词组的编码是否缺失。")
     if args["remote"]:
         xlog.info("启用远程 API 获取多音字的拼音。")
     xlog.info("************************************************")
@@ -205,7 +223,6 @@ if __name__ == "__main__":
     error_list = []
 
     second_level_dict = {}
-    simplified_list = []
 
     for key in code_dict:
         key_len = len(key)
@@ -540,6 +557,7 @@ if __name__ == "__main__":
 
     if args["verify"]:
         xlog.info("开始校验简码所对应的声韵词组...")
+        simplified_list = []
         for key in code_dict:
             for item in code_dict[key]:
                 if len(item) == 2 and len(key) > 3:
@@ -559,6 +577,42 @@ if __name__ == "__main__":
             xlog.warning("共检测到 " + str(simplified_count) + " 组存在简码的声韵词组：")
             for s_item in simplified_list:
                 xlog.warning(s_item)
+            xlog.info("================================================")
+
+    if args["fly"]:
+        xlog.info("开始校验飞键词组的编码是否缺失...")
+        fly_list = []
+        fly_dict = py.get_fly_dict()
+        word_dict = get_word_dict(code_dict)
+        for word in word_dict:
+            word_len = len(word)
+            if word_len < 2:
+                continue
+            is_fly_err = False
+            for i in range(word_len):
+                if i < 3 or i == word_len - 1:
+                    index = i if i < 3 else 3
+                    if word[i] in fly_dict:
+                        fly_count = 0
+                        for code in word_dict[word]:
+                            use_code = code[index]
+                            if word_len == 2:
+                                use_code = code[(index * 2):(index * 2 + 2)]
+                            for fly_code in fly_dict[word[i]]:
+                                if fly_code[:(len(use_code))] == use_code:
+                                    fly_count += 1
+                        if fly_count == 1:
+                            is_fly_err = True
+                            break
+            if is_fly_err:
+                log_str = " ".join(word_dict[word])
+                fly_list.append(f"{word}: [{log_str}]")
+        fly_err_count = len(fly_list)
+        if fly_err_count > 0:
+            xlog.info("================================================")
+            xlog.warning("共检测到 " + str(fly_err_count) + " 组可能存在飞键编码缺失的词条：")
+            for f_item in fly_list:
+                xlog.warning(f_item)
             xlog.info("================================================")
 
     xlog.info("校验已完成。")

@@ -244,7 +244,7 @@ class PinYin:
         return c_qm
 
     def is_polyphonic(self, qm, word):
-        word_len = len(word)
+        word_len = len(qm)
         for i in range(word_len):
             item_len = len(qm[i])
             if item_len > 1:

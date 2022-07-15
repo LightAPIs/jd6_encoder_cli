@@ -121,6 +121,11 @@ if __name__ == "__main__":
                     required=False,
                     action="store_true",
                     help="可选，额外启用校验简码所对应的声韵词组")
+    ap.add_argument("-a",
+                    "--irrational",
+                    required=False,
+                    action="store_true",
+                    help="可选，额外启用校验单字编码编排是否合理")
     ap.add_argument("-r",
                     "--remote",
                     required=False,
@@ -141,6 +146,8 @@ if __name__ == "__main__":
         xlog.info("额外启用校验单字编码的冗余情况。")
     if args["fly"]:
         xlog.info("额外启用校验飞键词组的编码是否缺失。")
+    if args["irrational"]:
+        xlog.info("额外启用校验单字编码编排是否合理。")
     if args["verify"]:
         xlog.info("额外启用校验简码所对应的声韵词组。")
     if args["remote"]:
@@ -598,7 +605,8 @@ if __name__ == "__main__":
                 for j in range(len(min_list)):
                     if is_start_with(min_list[j], cur_code):
                         is_min_had = True
-                        min_list[j] = cur_code if len(cur_code) < len(min_list[j]) else min_list[j]
+                        min_list[j] = cur_code if len(cur_code) < len(
+                            min_list[j]) else min_list[j]
                 if not is_min_had:
                     min_list.append(cur_code)
 
@@ -606,12 +614,14 @@ if __name__ == "__main__":
                 for j in range(len(max_list)):
                     if is_start_with(max_list[j], cur_code):
                         is_max_had = True
-                        max_list[j] = cur_code if len(cur_code) > len(max_list[j]) else max_list[j]
+                        max_list[j] = cur_code if len(cur_code) > len(
+                            max_list[j]) else max_list[j]
                 if not is_max_had:
                     max_list.append(cur_code)
 
             for code_item in word_dict[word]:
-                if min_list.count(code_item) > 0 or max_list.count(code_item) == 0:
+                if min_list.count(code_item) > 0 or max_list.count(
+                        code_item) == 0:
                     for j in range(1, len(code_item)):
                         if not code_item[0:j] in code_dict:
                             is_blank = True
@@ -689,6 +699,34 @@ if __name__ == "__main__":
         for f_item in fly_list:
             xlog.warning(f_item)
         xlog.info("================================================")
+
+    if args["irrational"]:
+        xlog.info("开始校验单字编码的编排是否合理...")
+        irrational_list = []
+        for key in code_dict:
+            group_list = code_dict[key]
+            single_list = [
+                group_list[i] for i in range(len(group_list))
+                if len(group_list[i]) == 1
+            ]
+            if len(single_list) >= 2:
+                first_single = single_list[0]
+                key_len = len(key) - 1
+                while key_len > 0:
+                    a_key = key[0:key_len]
+                    if a_key in code_dict:
+                        if code_dict[a_key][0] == first_single:
+                            irrational_list.append(
+                                f"{key}: [{' '.join(single_list)}]")
+                        break
+                    key_len -= 1
+        irrational_count = len(irrational_list)
+        if irrational_count > 0:
+            xlog.info("================================================")
+            xlog.warning("共检测到 " + str(irrational_count) + " 组编排不合理的单字编码：")
+            for i_item in irrational_list:
+                xlog.warning(i_item)
+            xlog.info("================================================")
 
     if args["verify"]:
         xlog.info("开始校验简码所对应的声韵词组...")

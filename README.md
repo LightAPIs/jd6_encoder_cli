@@ -7,7 +7,7 @@
 ## 命令
 
 ```bash
-main.py [-h] -d DICT [-u USER] [-g GDQ] [-i IGNORE] [-f] [-v] [-r]
+usage: main.py [-h] -d DICT [-u USER] [-g GDQ] [-i IGNORE] [-s] [-f] [-v] [-a] [-r]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -16,8 +16,10 @@ optional arguments:
   -g GDQ, --gdq GDQ     可选，生成跟打器所用的码表文件路径
   -i IGNORE, --ignore IGNORE
                         可选，忽略错码检测的列表文件路径
-  -f, --fly             可选，启用校验飞键词组的编码是否缺失
-  -v, --verify          可选，启用校验简码所对应的声韵词组
+  -s, --single          可选，额外启用校验单字编码的冗余情况
+  -f, --fly             可选，额外启用校验飞键词组的编码是否缺失
+  -v, --verify          可选，额外启用校验简码所对应的声韵词组
+  -a, --irrational      可选，额外启用校验单字编码编排是否合理
   -r, --remote          可选，启用远程 API 获取多音字的拼音，需填写 config.ini
 ```
 

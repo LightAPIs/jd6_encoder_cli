@@ -87,6 +87,12 @@ def is_part(lhs, rhs):
     return False
 
 
+def is_start_with(lhs, rhs):
+    if lhs.find(rhs) == 0 or rhs.find(lhs) == 0:
+        return True
+    return False
+
+
 if __name__ == "__main__":
     ap = argparse.ArgumentParser(description="Rime星空键道6编码器")
     ap.add_argument("-d",
@@ -100,16 +106,21 @@ if __name__ == "__main__":
                     help="可选，输入用户词库名称，默认为 xkjd6.user")
     ap.add_argument("-g", "--gdq", required=False, help="可选，生成跟打器所用的码表文件路径")
     ap.add_argument("-i", "--ignore", required=False, help="可选，忽略错码检测的列表文件路径")
+    ap.add_argument("-s",
+                    "--single",
+                    required=False,
+                    action="store_true",
+                    help="可选，额外启用校验单字编码的冗余情况")
     ap.add_argument("-f",
                     "--fly",
                     required=False,
                     action="store_true",
-                    help="可选，启用校验飞键词组的编码是否缺失")
+                    help="可选，额外启用校验飞键词组的编码是否缺失")
     ap.add_argument("-v",
                     "--verify",
                     required=False,
                     action="store_true",
-                    help="可选，启用校验简码所对应的声韵词组")
+                    help="可选，额外启用校验简码所对应的声韵词组")
     ap.add_argument("-r",
                     "--remote",
                     required=False,
@@ -126,10 +137,12 @@ if __name__ == "__main__":
         xlog.info("生成跟打器所用的码表文件：" + args["gdq"])
     if args["ignore"]:
         xlog.info("忽略错码检测的列表文件：" + args["ignore"])
-    if args["verify"]:
-        xlog.info("启用校验简码所对应的声韵词组。")
+    if args["single"]:
+        xlog.info("额外启用校验单字编码的冗余情况。")
     if args["fly"]:
-        xlog.info("启用校验飞键词组的编码是否缺失。")
+        xlog.info("额外启用校验飞键词组的编码是否缺失。")
+    if args["verify"]:
+        xlog.info("额外启用校验简码所对应的声韵词组。")
     if args["remote"]:
         xlog.info("启用远程 API 获取多音字的拼音。")
     xlog.info("************************************************")
@@ -564,6 +577,8 @@ if __name__ == "__main__":
 
     # ?校验同一词条的编码冗余情况
     surplus_list = []
+    # ?校验单字的编码冗余情况
+    blank_list = []
     # ?校验飞键词组的编码是否缺失
     fly_list = []
     fly_dict = py.get_fly_dict()
@@ -572,7 +587,50 @@ if __name__ == "__main__":
         word_len = len(word)
         group_len = len(word_dict[word])
         if word_len < 2:
+            if not args["single"]:
+                continue
+            is_blank = False
+            min_list = [word_dict[word][0]]
+            max_list = [word_dict[word][0]]
+            for i in range(1, group_len):
+                cur_code = word_dict[word][i]
+                is_min_had = False
+                for j in range(len(min_list)):
+                    if is_start_with(min_list[j], cur_code):
+                        is_min_had = True
+                        min_list[j] = cur_code if len(cur_code) < len(min_list[j]) else min_list[j]
+                if not is_min_had:
+                    min_list.append(cur_code)
+
+                is_max_had = False
+                for j in range(len(max_list)):
+                    if is_start_with(max_list[j], cur_code):
+                        is_max_had = True
+                        max_list[j] = cur_code if len(cur_code) > len(max_list[j]) else max_list[j]
+                if not is_max_had:
+                    max_list.append(cur_code)
+
+            for code_item in word_dict[word]:
+                if min_list.count(code_item) > 0 or max_list.count(code_item) == 0:
+                    for j in range(1, len(code_item)):
+                        if not code_item[0:j] in code_dict:
+                            is_blank = True
+                            break
+                        # !可以要求必须是单字
+                        # else:
+                        #     is_blank = True
+                        #     for temp_word in code_dict[code_item[0:j]]:
+                        #         if len(temp_word) == 1:
+                        #             is_blank = False
+                        #             break
+                        # if is_blank:
+                        #     break
+                if is_blank:
+                    break
+            if is_blank:
+                blank_list.append(f"{word}: [{' '.join(word_dict[word])}]")
             continue
+
         if group_len > 1:
             is_surplus = False
             for i in range(0, group_len):
@@ -611,12 +669,19 @@ if __name__ == "__main__":
                 fly_list.append(f"{word}: [{log_str}]")
 
     surplus_count = len(surplus_list)
+    blank_count = len(blank_list)
     fly_err_count = len(fly_list)
     if surplus_count > 0:
         xlog.info("================================================")
-        xlog.warning("共检测到 " + str(surplus_count) + " 组词条的编码冗余：")
+        xlog.warning("共检测到 " + str(surplus_count) + " 组词条存在编码冗余：")
         for s_item in surplus_list:
             xlog.warning(s_item)
+        xlog.info("================================================")
+    if blank_count:
+        xlog.info("================================================")
+        xlog.warning("共检测到 " + str(blank_count) + " 组单字存在编码冗余：")
+        for b_item in blank_list:
+            xlog.warning(b_item)
         xlog.info("================================================")
     if fly_err_count > 0:
         xlog.info("================================================")

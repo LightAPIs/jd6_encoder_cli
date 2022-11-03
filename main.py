@@ -92,7 +92,7 @@ def is_start_with(lhs, rhs):
         return True
     return False
 
-def getSystemInform():
+def get_system_inform():
     import platform
     system = platform.system()
     if system == "Windows":
@@ -144,14 +144,14 @@ if __name__ == "__main__":
     args = vars(ap.parse_args())
     xlog = Logger("DEBUG", "log")
 
-    if args["dict"] is None:
-        os_type = getSystemInform()
+    if args["dict"] is None:#使用默认词库位置
+        os_type = get_system_inform()
         if os_type == "windows":
             args["dict"] = os.environ['USERPROFILE']+"\\AppData\\Roaming\\Rime\\xkjd6.extended.dict.yaml"
         elif os_type == "linux":
             args["dict"] = "~/.config/fcitx5/rime/xkjd6.extended.dict.yaml"
             if not os.path.exists(args["dict"]):
-                args["dict"] = "~/.config/fcitx/rime/xkjd6.extended.dict.yaml"#兼容fcitx4
+                args["dict"] = "~/.config/fcitx/rime/xkjd6.extended.dict.yaml"#fcitx4
         elif os_type == "mac":
             args["dict"] = "~/Library/Rime/xkjd6.extended.dict.yaml"#由copilot提供，未测试是否正确
 
@@ -174,9 +174,9 @@ if __name__ == "__main__":
         xlog.info("启用远程 API 获取多音字的拼音。")
     xlog.info("************************************************")
 
-    # if not os.path.exists(args["dict"]):
-    #     xlog.error("词库控制文件不存在！操作终止。")
-    #     exit()
+    if not os.path.exists(args["dict"]):
+        xlog.error("词库控制文件不存在！操作终止。")
+        exit()
 
     # *编码工作
     xlog.info("开始解析词库...")

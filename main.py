@@ -149,9 +149,9 @@ if __name__ == "__main__":
         if os_type == "windows":
             args["dict"] = os.environ['USERPROFILE']+"\\AppData\\Roaming\\Rime\\xkjd6.extended.dict.yaml"
         elif os_type == "linux":
-            args["dict"] = "~/.config/fcitx5/rime/xkjd6.extended.dict.yaml"
+            args["dict"] = "~/.local/share/fcitx5/rime/xkjd6.extended.dict.yaml"
             if not os.path.exists(args["dict"]):
-                args["dict"] = "~/.config/fcitx/rime/xkjd6.extended.dict.yaml"#fcitx4
+                args["dict"] = "~/.local/share/fcitx/rime/xkjd6.extended.dict.yaml"#fcitx4
         elif os_type == "mac":
             args["dict"] = "~/Library/Rime/xkjd6.extended.dict.yaml"#由copilot提供，未测试是否正确
 

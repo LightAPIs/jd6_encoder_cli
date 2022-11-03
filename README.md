@@ -28,3 +28,8 @@ optional arguments:
 - `yaml` 文件解析：[yaml/pyyaml](https://github.com/yaml/pyyaml) ([MIT license](https://github.com/yaml/pyyaml/blob/master/LICENSE))
 - HTTP 网络请求：[psf/requests](https://github.com/psf/requests) ([Apache-2.0 license](https://github.com/psf/requests/blob/main/LICENSE))
 - 本地拼音转换：[mozillazg/python-pinyin](https://github.com/mozillazg/python-pinyin) ([MIT license](https://github.com/mozillazg/python-pinyin/blob/master/LICENSE.txt))
+
+### 安装依赖
+
+```bash
+python -m pip install pyyaml requests pypinyin

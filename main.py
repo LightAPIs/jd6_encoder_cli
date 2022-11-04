@@ -92,12 +92,21 @@ def is_start_with(lhs, rhs):
         return True
     return False
 
+def get_system_inform():
+    import platform
+    system = platform.system()
+    if system == "Windows":
+        return "windows"
+    elif system == "Linux":
+        return "linux"
+    else:
+        return "mac"
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser(description="Rime星空键道6编码器")
     ap.add_argument("-d",
                     "--dict",
-                    required=True,
+                    required=False,
                     help="输入词库控制文件路径，如 /path/to/xkjd6.extended.dict.yaml")
     ap.add_argument("-u",
                     "--user",
@@ -134,6 +143,17 @@ if __name__ == "__main__":
 
     args = vars(ap.parse_args())
     xlog = Logger("DEBUG", "log")
+
+    if args["dict"] is None:#使用默认词库位置
+        os_type = get_system_inform()
+        if os_type == "windows":
+            args["dict"] = os.environ['USERPROFILE']+"\\AppData\\Roaming\\Rime\\xkjd6.extended.dict.yaml"
+        elif os_type == "linux":
+            args["dict"] = "~/.local/share/fcitx5/rime/xkjd6.extended.dict.yaml"
+            if not os.path.exists(args["dict"]):
+                args["dict"] = "~/.local/share/fcitx/rime/xkjd6.extended.dict.yaml"#fcitx4
+        elif os_type == "mac":
+            args["dict"] = "~/Library/Rime/xkjd6.extended.dict.yaml"#由copilot提供，未测试是否正确
 
     xlog.info("************************************************")
     xlog.info("词库控制文件：" + args["dict"])

@@ -12,7 +12,7 @@ usage: main.py [-h] -d DICT [-u USER] [-g GDQ] [-i IGNORE] [-s] [-f] [-v] [-a] [
 optional arguments:
   -h, --help            show this help message and exit
   -d DICT, --dict DICT  输入词库控制文件路径，如 /path/to/xkjd6.extended.dict.yaml
-  -u USER, --user USER  可选，输入用户词库名称，默认为 xkjd6.user
+  -u USER, --user USER  可选，输入词库控制文件同目录下用户词库文件名称，默认为 xkjd6.user（.dict.yaml）
   -g GDQ, --gdq GDQ     可选，生成跟打器所用的码表文件路径
   -i IGNORE, --ignore IGNORE
                         可选，忽略错码检测的列表文件路径
@@ -28,3 +28,9 @@ optional arguments:
 - `yaml` 文件解析：[yaml/pyyaml](https://github.com/yaml/pyyaml) ([MIT license](https://github.com/yaml/pyyaml/blob/master/LICENSE))
 - HTTP 网络请求：[psf/requests](https://github.com/psf/requests) ([Apache-2.0 license](https://github.com/psf/requests/blob/main/LICENSE))
 - 本地拼音转换：[mozillazg/python-pinyin](https://github.com/mozillazg/python-pinyin) ([MIT license](https://github.com/mozillazg/python-pinyin/blob/master/LICENSE.txt))
+
+### 安装依赖
+
+```bash
+python -m pip install pyyaml requests pypinyin
+```

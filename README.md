@@ -33,3 +33,4 @@ optional arguments:
 
 ```bash
 python -m pip install pyyaml requests pypinyin
+```
